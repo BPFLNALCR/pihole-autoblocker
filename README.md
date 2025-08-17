@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Made for Pi-hole](https://img.shields.io/badge/Made%20for-Pi--hole-blue.svg)](https://pi-hole.net/)
-[![CI](https://github.com/BPFLNALCR/pihole-autoblocker/actions/workflows/ci.yml/badge.svg)](.github/workflows/ci.yml)
+[![CI](https://github.com/BPFLNALCR/pihole-autoblocker/actions/workflows/ci.yml/badge.svg)](https://github.com/BPFLNALCR/pihole-autoblocker/actions/workflows/ci.yml)
 [![Issues](https://img.shields.io/github/issues/BPFLNALCR/pihole-autoblocker)](https://github.com/BPFLNALCR/pihole-autoblocker/issues)
 [![Stars](https://img.shields.io/github/stars/BPFLNALCR/pihole-autoblocker?style=social)](https://github.com/BPFLNALCR/pihole-autoblocker/stargazers)
 
