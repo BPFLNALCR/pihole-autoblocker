@@ -49,56 +49,114 @@ install -m 0755 ./pihole-autoblocker-review.py "$BIN/pihole-autoblocker-review"
 CFG=$ETC/config.yml
 if [[ ! -f $CFG ]]; then
 	cat >"$CFG" <<YAML
-# Pi-hole Autoblocker config
+# Pi-hole Autoblocker config (safe defaults)
+# Highly recommended: curate ALLOWLIST and LEARN_STOPWORDS before disabling dry_run.
+# The tool will never promote anything already blocked or on the allowlist.
+
+# --- Safety rails (HIGHLY RECOMMENDED to review) ---
+allowlist:
+  - github.com
+  - google.com
+  - gstatic.com
+  - youtube.com
+  - netflix.com
+  - microsoft.com
+  - apple.com
+  - cloudfront.net
+  - akamaihd.net
+  - akamaized.net
+  - cdn.jsdelivr.net
+  - fastly.net
+  - fbcdn.net
+  - cdn.cloudflare.net
+
+allowlist_file: $PH_ETC/pihole-autoblocker.allow.txt   # operator-managed allowlist
+manual_block_file: $PH_ETC/pihole-autoblocker.manual-block.txt
+
+# --- Traffic gating (before any suspicion checks) ---
 lookback_hours: 24
 min_hits: 10
 min_unique_clients: 2
-min_hours_active: 0
+min_hours_active: 2            # temporal diversity to reduce flukes
+
+# --- Quarantine & promotion ---
 quarantine_hours: 12
 promotion_min_score: 0.90
+dry_run: true                  # start safe; review JSON/TSV before enabling real promotions
 
-# Heuristics
-suspicious_substrings: [adserver, ads, metrics, telemetry, track, analytic, pixel, beacon]
-suspicious_tlds: [click, xyz, top, work, support, country, pw, buzz, gq, cf, tk]
+# --- Heuristics (manual + learned) ---
+suspicious_substrings:
+  - adserver
+  - ads
+  - metrics
+  - telemetry
+  - track
+  - analytic
+  - analytics
+  - pixel
+  - beacon
+  - affiliate
+  - clickid
+  - utm
+suspicious_tlds: [click, xyz, top, work, support, country, pw, buzz, gq, cf, tk, live, online, info, shop]
+
 auto_learn_keywords: true
 learn_refresh_hours: 24
 learn_min_support_etlds: 8
 learn_max_keywords: 200
-learn_stopwords: [www, api, cdn, img, static]
+# Keep generic tokens out of the learned list to avoid overblocking.
+learn_stopwords:
+  - com
+  - net
+  - org
+  - www
+  - api
+  - cdn
+  - img
+  - static
+  - media
+  - assets
+  - edge
+  - prod
+  - main
+  - ns
+  - mail
+  - eu
+  - us
+  - de
 
-# CNAME checks
+# --- CNAME checks ---
 cname_max_depth: 2
 cname_cache_only: true
 cname_cache_ttl_hours: 24
 cname_cache_path: $VAR/cname_cache.json
 
-# Reputation by family (eTLD+1 overlaps across adlists)
+# --- Reputation by family (eTLD+1 overlaps across adlists) ---
 family_adlist_threshold: 6
 
-# Files/paths
+# --- Files/paths ---
 output_file: $OUT_FILE
 legacy_output_symlink: $LEGACY_SYMLINK
-manual_block_file: $PH_ETC/pihole-autoblocker.manual-block.txt
-allowlist_file:     $PH_ETC/pihole-autoblocker.allow.txt
-quarantine_file:    $QUAR_JSON
+quarantine_file: $QUAR_JSON
 quarantine_review_file: $REVIEW_JSON
 quarantine_tsv_file: $TSV
 ftl_db: $FTL_DB
 log_file: $LOG
 metrics_path: /var/lib/node_exporter/textfile_collector/pihole_autoblocker.prom
 
-# Promotion method
+# --- Promotion method ---
 sql_promotion: true
 promotion_group: Default
 promotion_comment: autoblocker
 
-# Limits
+# --- Limits / scoring ---
 top_n_cname: 200
 score_hits_k: 20
 score_uniq_k: 3
 score_hours_k: 6
 YAML
 fi
+
 
 # --- systemd unit + timer ---
 cat >/etc/systemd/system/pihole-autoblocker.service <<'UNIT'
