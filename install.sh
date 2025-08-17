@@ -156,8 +156,6 @@ score_uniq_k: 3
 score_hours_k: 6
 YAML
 fi
-
-
 # --- systemd unit + timer ---
 cat >/etc/systemd/system/pihole-autoblocker.service <<'UNIT'
 [Unit]
