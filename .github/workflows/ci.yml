@@ -35,10 +35,19 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: "3.x"
-      - name: Install dependencies (if requirements.txt exists)
+      - name: Install dependencies & test tools
         run: |
           python -m pip install --upgrade pip
+          # Install project deps if present, and always ensure pytest is available
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-      - name: Run tests
+          pip install pytest
+      - name: Run tests (skip if none found)
+        shell: bash
         run: |
-          pytest
+          set -euo pipefail
+          # Detect common Python test locations/patterns
+          if [ -d tests ] || git ls-files '*test*.py' | grep -q .; then
+            pytest
+          else
+            echo "No tests detected (no tests/ dir or *test*.py files). Skipping."
+          fi
