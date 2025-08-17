@@ -12,31 +12,33 @@ on:
 
 jobs:
   lint:
-    runs-on: ubuntu-latest   # Use the latest Ubuntu runner for linting
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3   # Checkout the repository code
+      - name: Install shell linters
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck shfmt
       - name: Run ShellCheck
         run: |
-          set -e
-          shellcheck install.sh     # Lint shell scripts with ShellCheck
+          shellcheck install.sh
       - name: Run shfmt
         run: |
-          set -e
-          shfmt -d .               # Verify shell script formatting
+          shfmt -d .
 
   build:
-    runs-on: ubuntu-latest   # Use the latest Ubuntu runner for build and tests
-    needs: lint              # Ensure lint job passes before running build
+    runs-on: ubuntu-latest
+    needs: lint
     steps:
       - uses: actions/checkout@v3   # Checkout the repository code
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.x"    # Install latest Python 3 version
+          python-version: "3.x"
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt   # Install project dependencies
+          pip install -r requirements.txt
       - name: Run tests
         run: |
-          pytest   # Run test suite with pytest
+          pytest
