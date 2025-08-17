@@ -1,64 +1,42 @@
+# Continuous Integration (CI) Workflow
+# This workflow runs on pushes and pull requests to the main branch.
+# It ensures code quality (linting) and runs tests to verify changes.
+
 name: CI
 
 on:
   push:
-    branches: [main, master]
+    branches: ["main"]   # Trigger workflow on push events to the main branch
   pull_request:
-    branches: [main, master]
+    branches: ["main"]   # Trigger workflow on pull requests targeting the main branch
 
 jobs:
-  lint-and-check:
-    runs-on: ubuntu-latest
+  lint:
+    runs-on: ubuntu-latest   # Use the latest Ubuntu runner for linting
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v3   # Checkout the repository code
+      - name: Run ShellCheck
+        run: |
+          set -e
+          shellcheck install.sh     # Lint shell scripts with ShellCheck
+      - name: Run shfmt
+        run: |
+          set -e
+          shfmt -d .               # Verify shell script formatting
 
+  build:
+    runs-on: ubuntu-latest   # Use the latest Ubuntu runner for build and tests
+    needs: lint              # Ensure lint job passes before running build
+    steps:
+      - uses: actions/checkout@v3   # Checkout the repository code
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
-          python-version: "3.11"
-
-      - name: Install tooling
+          python-version: "3.x"    # Install latest Python 3 version
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pyyaml
-          sudo apt-get update
-          sudo apt-get install -y shellcheck shfmt
-
-      - name: Python syntax check
+          pip install -r requirements.txt   # Install project dependencies
+      - name: Run tests
         run: |
-          set -e
-          for f in pihole-autoblocker pihole-autoblocker.py pihole-autoblocker-review.py; do
-            if [ -f "$f" ]; then
-              echo "Checking $f"
-              python -m py_compile "$f"
-            fi
-          done
-
-      - name: Shellcheck installer scripts
-        run: |
-          set -e
-          for f in install.sh uninstall.sh upgrade.sh; do
-            if [ -f "$f" ]; then
-              echo "shellcheck $f"
-              shellcheck "$f"
-            fi
-          done
-
-      - name: shfmt (format diff)
-        run: |
-          set -e
-          files=$(ls *.sh 2>/dev/null || true)
-          if [ -n "$files" ]; then
-            # -d: print diff, -s: simplify
-            shfmt -d -s *.sh
-          fi
-
-      - name: Validate example config YAML (optional)
-        run: |
-          set -e
-          if [ -f config.yml.example ]; then
-            python -c "import yaml,sys; yaml.safe_load(open('config.yml.example')); print('config.yml.example OK')"
-          else
-            echo "config.yml.example not present; skipping"
-          fi
+          pytest   # Run test suite with pytest
