@@ -159,7 +159,7 @@ fi
 
 
 # --- systemd unit + timer ---
-cat >/etc/systemd/system/pihole-autoblocker.service << 'UNIT'
+cat >/etc/systemd/system/pihole-autoblocker.service <<'UNIT'
 [Unit]
 Description=Pi-hole Autoblocker - generate dynamic blocklist
 After=network-online.target
@@ -179,9 +179,9 @@ IOSchedulingPriority=7
 WantedBy=multi-user.target
 UNIT
 
-cat >/etc/systemd/system/pihole-autoblocker.timer << 'TIMER'
+cat >/etc/systemd/system/pihole-autoblocker.timer <<'TIMER'
 [Unit]
-Description=Run Pi-hole Autoblocker periodically
+Description=Run Pi-hole Autoblocker periodically	
 
 [Timer]
 OnCalendar=hourly
