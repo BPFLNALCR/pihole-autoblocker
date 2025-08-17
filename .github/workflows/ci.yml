@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  lint-and-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install tooling
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyyaml
+          sudo apt-get update
+          sudo apt-get install -y shellcheck shfmt
+
+      - name: Python syntax check
+        run: |
+          set -e
+          # Compile any Python entrypoints if present
+          for f in pihole-autoblocker pihole-autoblocker.py pihole-autoblocker-review.py; do
+            if [ -f "$f" ]; then
+              echo "Checking $f";
+              python -m py_compile "$f";
+            fi
+          done
+
+      - name: Shellcheck installer scripts
+        run: |
+          set -e
+          for f in install.sh uninstall.sh upgrade.sh; do
+            if [ -f "$f" ]; then
+              echo "shellcheck $f";
+              shellcheck "$f";
+            fi
+          done
+
+      - name: shfmt (format diff)
+        run: |
+          set -e
+          files=$(ls *.sh 2>/dev/null || true)
+          if [ -n "$files" ]; then
+            # -d: print diff, -s: simplify
+            shfmt -d -s *.sh
+          fi
+
+      - name: Validate example config YAML (optional)
+        run: |
+          set -e
+          if [ -f config.yml.example ]; then
+            python - <<'PY'
+import yaml
+print('Parsing config.yml.example...')
+with open('config.yml.example','r') as f:
+    yaml.safe_load(f)
+print('OK')
+PY
+          fi
+
+      - name: Ensure workflow badge target exists
+        run: |
+          test -f .github/workflows/ci.yml || (echo 'ci.yml missing' && exit 1)
