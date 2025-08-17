@@ -146,8 +146,8 @@ sqlite3 $PH_ETC/gravity.db "INSERT OR IGNORE INTO adlist (address, enabled, comm
 /usr/local/bin/pihole -g || true
 
 # --- status hints ---
-echo "\nInstall complete. Useful checks:"
-echo "  systemctl status pihole-autoblocker.timer"
-echo "  journalctl -u pihole-autoblocker.service -n 80 --no-pager"
-echo "  ls -l $OUT_FILE $LEGACY_SYMLINK || true"
-echo "  pihole-autoblocker-review --top 20"
+printf "\nInstall complete. Useful checks:\n"
+printf "  systemctl status pihole-autoblocker.timer\n"
+printf "  journalctl -u pihole-autoblocker.service -n 80 --no-pager\n"
+printf "  ls -l %s %s || true\n" "$OUT_FILE" "$LEGACY_SYMLINK"
+printf "  pihole-autoblocker-review --top 20\n"
