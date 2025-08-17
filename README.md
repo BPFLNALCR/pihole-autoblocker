@@ -1,19 +1,33 @@
 # Pi-hole Autoblocker
 
-An **adaptive, low-noise** companion to Pi-hole that automatically detects, quarantines, and promotes suspicious domains into Pi-hole’s blocklist. It balances autonomous operation with user control via an interactive reviewer.
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Made for Pi-hole](https://img.shields.io/badge/Made%20for-Pi--hole-blue.svg)](https://pi-hole.net/)
+[![Issues](https://img.shields.io/github/issues/BPFLNALCR/pihole-autoblocker)](https://github.com/BPFLNALCR/pihole-autoblocker/issues)
+[![Stars](https://img.shields.io/github/stars/BPFLNALCR/pihole-autoblocker?style=social)](https://github.com/BPFLNALCR/pihole-autoblocker/stargazers)
+
+> Adaptive, low-noise companion to Pi-hole that automatically detects, quarantines, and promotes suspicious domains into Pi-hole’s blocklist. Autonomous by default, but with interactive controls when you want them.
 
 ---
 
-## Why Autoblocker?
+## 🔗 Quick Links
+- 📖 [Documentation](./docs/Documentation.md) – full technical details
+- 🚀 [Install Script](./install.sh)
+- 🔄 [Upgrade Script](./upgrade.sh)
+- ❌ [Uninstall Script](./uninstall.sh)
+- 🛠 [Issues](https://github.com/BPFLNALCR/pihole-autoblocker/issues)
+
+---
+
+## ✨ Why Autoblocker?
 - **Personalized signal**: Blocks only domains that *your* network repeatedly queries.
 - **Safety rails**: Quarantine delay, score threshold, allowlist, and activity filters prevent false positives.
-- **CNAME cloak detection**: Optionally detects first‑party tracker cloaks with minimal DNS noise.
+- **CNAME cloak detection**: Optionally detects first-party tracker cloaks with minimal DNS noise.
 - **Low noise design**: Thresholds-first + cache-only lookups + persistent caches.
 - **Interactive control**: Review quarantined domains and promote/release manually if desired.
 
 ---
 
-## Features
+## 🔧 Features
 - Threshold-first candidate selection (hits, unique clients, and active hours)
 - Static + auto-learned keywords (from adlists)
 - Family reputation by eTLD+1 overlap across adlists
@@ -21,13 +35,12 @@ An **adaptive, low-noise** companion to Pi-hole that automatically detects, quar
 - Quarantine → promote flow with dry-run mode
 - Auto-promotion after score ≥ **0.90** (default) and quarantine ≥ **12h**
 - SQL promotions (direct to gravity.db) or manual blocklist file
-- Skips duplicates already blocked via adlists or blacklist
 - Prometheus textfile metrics (optional)
 - Interactive reviewer (`pihole-autoblocker-review`) with prompt or `fzf`
 
 ---
 
-## Quickstart
+## 🚀 Quickstart
 
 ### 1. Clone Repo
 ```bash
@@ -36,7 +49,6 @@ cd pihole-autoblocker
 ```
 
 ### 2. Install
-Use the installer to set up binaries, config, systemd units, and adlist registration:
 ```bash
 sudo ./install.sh
 ```
@@ -62,9 +74,8 @@ pihole-autoblocker-review --interactive
 
 ---
 
-## Config (`/etc/pihole-autoblocker/config.yml`)
+## ⚙️ Config (`/etc/pihole-autoblocker/config.yml`)
 
-Key options:
 ```yaml
 lookback_hours: 24
 min_hits: 10
@@ -89,7 +100,7 @@ log_file: /var/log/pihole-autoblocker.log
 
 ---
 
-## Maintenance
+## 🔄 Maintenance
 
 ### Upgrade
 ```bash
@@ -105,7 +116,7 @@ sudo ./uninstall.sh
 
 ---
 
-## Troubleshooting
+## 🛠 Troubleshooting
 - **Empty blocklist file**: Normal until domains are promoted or manually added.
 - **No quarantine.json**: Ensure service is running and `quarantine_file` is set.
 - **Promotion not working**: Check `promotion_min_score` and `quarantine_hours`.
@@ -113,5 +124,5 @@ sudo ./uninstall.sh
 
 ---
 
-## License
+## 📜 License
 MIT (or TBD)
