@@ -1,158 +1,117 @@
-#README.md
+# Pi-hole Autoblocker
 
-## Pi-hole Autoblocker (Adaptive + Low-Noise)
+An **adaptive, low-noise** companion to Pi-hole that automatically detects, quarantines, and promotes suspicious domains into Pi-hole’s blocklist. It balances autonomous operation with user control via an interactive reviewer.
 
-A small Python service that watches your Pi-hole query history, identifies likely trackers with conservative heuristics, and automatically promotes repeat offenders to the blacklist after a quarantine window.
+---
 
-### Why this instead of just more adlists?
-
-- **Local, personalized signal**: Promotes only what *your* network repeatedly hits.
-- **CNAME cloak detection**: (optional) catches first-party cloaks with minimal DNS noise.
-- **Safety rails**: quarantine delay, allowlist, hours-active filter, and client diversity.
-- **Low noise**: thresholds-first + cache-only CNAME + persistent cache keep localhost DNS bursts small.
+## Why Autoblocker?
+- **Personalized signal**: Blocks only domains that *your* network repeatedly queries.
+- **Safety rails**: Quarantine delay, score threshold, allowlist, and activity filters prevent false positives.
+- **CNAME cloak detection**: Optionally detects first‑party tracker cloaks with minimal DNS noise.
+- **Low noise design**: Thresholds-first + cache-only lookups + persistent caches.
+- **Interactive control**: Review quarantined domains and promote/release manually if desired.
 
 ---
 
 ## Features
-
 - Threshold-first candidate selection (hits, unique clients, and active hours)
-- Static + auto-learned keywords (mined from your existing adlists)
+- Static + auto-learned keywords (from adlists)
 - Family reputation by eTLD+1 overlap across adlists
-- Optional CNAME chase with cache-only lookups and persistent cache
+- Optional CNAME chase with cache-only lookups and TTL cache
 - Quarantine → promote flow with dry-run mode
-- SQL promotions (no REST) with CLI fallback
-- Skips duplicates: ignores domains already blocked via adlists or blacklist
+- Auto-promotion after score ≥ **0.90** (default) and quarantine ≥ **12h**
+- SQL promotions (direct to gravity.db) or manual blocklist file
+- Skips duplicates already blocked via adlists or blacklist
 - Prometheus textfile metrics (optional)
-- Concurrency lock (no overlapping runs)
+- Interactive reviewer (`pihole-autoblocker-review`) with prompt or `fzf`
 
 ---
 
-## Install
+## Quickstart
 
+### 1. Clone Repo
+```bash
+git clone https://github.com/BPFLNALCR/pihole-autoblocker.git
+cd pihole-autoblocker
 ```
-Stil working on this
+
+### 2. Install
+Use the installer to set up binaries, config, systemd units, and adlist registration:
+```bash
+sudo ./install.sh
 ```
 
-### Example config (`/etc/pihole-autoblocker/config.yml`)
+### 3. Verify
+```bash
+systemctl status pihole-autoblocker.timer
+journalctl -u pihole-autoblocker.service -n 50 --no-pager
+ls -l /etc/pihole/pihole-autoblocker.txt
+```
 
+### 4. First Run
+```bash
+sudo systemctl start pihole-autoblocker.service
+sudo pihole -g
+```
+
+### 5. Review Quarantine
+```bash
+pihole-autoblocker-review --top 20
+pihole-autoblocker-review --interactive
+```
+
+---
+
+## Config (`/etc/pihole-autoblocker/config.yml`)
+
+Key options:
 ```yaml
-# How aggressive?
 lookback_hours: 24
 min_hits: 10
 min_unique_clients: 2
-min_hours_active: 2   # require presence in ≥2 hours within lookback (optional)
-
-# Quarantine
+min_hours_active: 0
 quarantine_hours: 12
+promotion_min_score: 0.90
 
-# CNAME detection (set cname_max_depth: 0 to disable)
-cname_max_depth: 1
-cname_cache_only: true             # do not trigger upstream recursion
-cname_cache_path: "/var/lib/pihole-autoblocker/cname_cache.json"
-cname_cache_ttl_hours: 24
-# Only CNAME-check this many busiest domains per run
-top_n_cname: 100
+suspicious_substrings: [adserver, ads, metrics, telemetry, track, analytic, pixel, beacon]
+suspicious_tlds: [click, xyz, top, work, support, country, pw, buzz, gq, cf, tk]
 
-# Learned keywords (auto)
-auto_learn_keywords: true
-learn_min_support_etlds: 8
-learn_max_keywords: 200
-learn_refresh_hours: 24
-learned_keywords_path: "/var/lib/pihole-autoblocker/learned_keywords.json"
-learn_stopwords: ["www","api","cdn","img","static","assets","edge","files","m","s","i","v","gw","ad"]
+sql_promotion: true
+promotion_group: Default
+promotion_comment: autoblocker
 
-# Family reputation: treat eTLD+1 as suspicious if present in ≥N adlists
-family_adlist_threshold: 3
-
-# Static heuristics
-suspicious_substrings: ["doubleclick","adnxs","braze","branch.io","outbrain","taboola","moatads","googlesyndication","analytics","scorecardresearch"]
-suspicious_tlds: [".doubleclick.net",".adnxs.com",".scorecardresearch.com"]
-
-# Never auto-block
-allowlist: ["google.com","gstatic.com","googleapis.com","microsoft.com","github.com","githubusercontent.com","cloudfront.net","cdn.cloudflare.net","fastly.net","akamai.net","apple.com","icloud.com"]
-
-# Behavior
-sql_promotion: true                 # write to gravity.db directly
-promotion_group: "Default"
-promotion_comment: "autoblocker"
-dry_run: false
-
-# Paths
-ftl_db: "/etc/pihole/pihole-FTL.db"
-quarantine_file: "/var/lib/pihole-autoblocker/quarantine.json"
-state_file: "/var/lib/pihole-autoblocker/state.json"
-log_file: "/var/log/pihole-autoblocker/run.log"
-
-# Optional Prometheus textfile metrics
-metrics_path: "/var/lib/node_exporter/textfile_collector/autoblocker.prom"
+output_file: /etc/pihole/pihole-autoblocker.txt
+legacy_output_symlink: /etc/pihole/custom_autoblocker.txt
+manual_block_file: /etc/pihole/pihole-autoblocker.manual-block.txt
+allowlist_file: /etc/pihole/pihole-autoblocker.allow.txt
+log_file: /var/log/pihole-autoblocker.log
 ```
 
-### systemd service & timer
+---
 
+## Maintenance
+
+### Upgrade
 ```bash
-sudo tee /etc/systemd/system/pihole-autoblocker.service >/dev/null <<'UNIT'
-[Unit]
-Description=Pi-hole Autoblocker (quarantine + promote)
-After=network-online.target pihole-FTL.service
-Wants=network-online.target
-
-[Service]
-Type=oneshot
-ExecStart=/usr/local/bin/pihole-autoblocker.py
-User=root
-Group=root
-Nice=10
-
-[Install]
-WantedBy=multi-user.target
-UNIT
-
-sudo tee /etc/systemd/system/pihole-autoblocker.timer >/dev/null <<'UNIT'
-[Unit]
-Description=Run Pi-hole Autoblocker periodically
-
-[Timer]
-OnBootSec=5m
-OnUnitActiveSec=3h      # adjust to taste
-AccuracySec=5m
-Persistent=true
-
-[Install]
-WantedBy=timers.target
-UNIT
-
-sudo systemctl daemon-reload
-sudo systemctl enable --now pihole-autoblocker.timer
+cd ~/pihole-autoblocker
+sudo ./upgrade.sh
 ```
 
----
-
-## How it decides to block
-
-1. Domain crosses thresholds (hits, unique clients, optional hours-active).
-2. Domain looks suspicious by **static/learned keywords**, **TLD**, or **family reputation**.
-3. Optionally, CNAME chain (1 hop by default) also looks suspicious.
-4. Domain sits in **quarantine**. If still active after `quarantine_hours`, it is promoted.
-
----
-
-## Tips
-
-- Set `cname_max_depth: 0` for **zero extra DNS** from the script.
-- Keep `cname_cache_only: true` to avoid upstream recursion during checks.
-- Use `dry_run: true` to audit what would be promoted without touching Pi-hole.
-- Use Pi-hole **Groups** to send promotions to an "Aggressive" group for IoT/Guest VLANs only.
+### Uninstall
+```bash
+cd ~/pihole-autoblocker
+sudo ./uninstall.sh
+```
 
 ---
 
 ## Troubleshooting
-
-- Check logs: `journalctl -u pihole-autoblocker.service -n 100 --no-pager`
-- Validate YAML: `python3 -c 'import yaml; print(yaml.safe_load(open("/etc/pihole-autoblocker/config.yml")))'`
-- Confirm blacklist inserts: `sqlite3 /etc/pihole/gravity.db "SELECT domain,type FROM domainlist WHERE comment='autoblocker';"`
+- **Empty blocklist file**: Normal until domains are promoted or manually added.
+- **No quarantine.json**: Ensure service is running and `quarantine_file` is set.
+- **Promotion not working**: Check `promotion_min_score` and `quarantine_hours`.
+- **Systemd errors**: Run `journalctl -u pihole-autoblocker.service -n 50`.
 
 ---
 
 ## License
-
-None at the moment
+MIT (or TBD)
