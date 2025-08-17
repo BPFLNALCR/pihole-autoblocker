@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
 
 jobs:
   lint-and-check:
@@ -16,7 +16,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       - name: Install tooling
         run: |
@@ -28,11 +28,10 @@ jobs:
       - name: Python syntax check
         run: |
           set -e
-          # Compile any Python entrypoints if present
           for f in pihole-autoblocker pihole-autoblocker.py pihole-autoblocker-review.py; do
             if [ -f "$f" ]; then
-              echo "Checking $f";
-              python -m py_compile "$f";
+              echo "Checking $f"
+              python -m py_compile "$f"
             fi
           done
 
@@ -41,8 +40,8 @@ jobs:
           set -e
           for f in install.sh uninstall.sh upgrade.sh; do
             if [ -f "$f" ]; then
-              echo "shellcheck $f";
-              shellcheck "$f";
+              echo "shellcheck $f"
+              shellcheck "$f"
             fi
           done
 
@@ -59,15 +58,7 @@ jobs:
         run: |
           set -e
           if [ -f config.yml.example ]; then
-            python - <<'PY'
-import yaml
-print('Parsing config.yml.example...')
-with open('config.yml.example','r') as f:
-    yaml.safe_load(f)
-print('OK')
-PY
+            python -c "import yaml,sys; yaml.safe_load(open('config.yml.example')); print('config.yml.example OK')"
+          else
+            echo "config.yml.example not present; skipping"
           fi
-
-      - name: Ensure workflow badge target exists
-        run: |
-          test -f .github/workflows/ci.yml || (echo 'ci.yml missing' && exit 1)
