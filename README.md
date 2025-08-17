@@ -2,6 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Made for Pi-hole](https://img.shields.io/badge/Made%20for-Pi--hole-blue.svg)](https://pi-hole.net/)
+[![CI](https://github.com/BPFLNALCR/pihole-autoblocker/actions/workflows/ci.yml/badge.svg)](.github/workflows/ci.yml)
 [![Issues](https://img.shields.io/github/issues/BPFLNALCR/pihole-autoblocker)](https://github.com/BPFLNALCR/pihole-autoblocker/issues)
 [![Stars](https://img.shields.io/github/stars/BPFLNALCR/pihole-autoblocker?style=social)](https://github.com/BPFLNALCR/pihole-autoblocker/stargazers)
 
@@ -14,6 +15,7 @@
 - 🚀 [Install Script](./install.sh)
 - 🔄 [Upgrade Script](./upgrade.sh)
 - ❌ [Uninstall Script](./uninstall.sh)
+- 🧪 [CI Workflow](.github/workflows/ci.yml)
 - 🛠 [Issues](https://github.com/BPFLNALCR/pihole-autoblocker/issues)
 
 ---
@@ -71,6 +73,50 @@ sudo pihole -g
 pihole-autoblocker-review --top 20
 pihole-autoblocker-review --interactive
 ```
+
+---
+
+## 🧭 Manual Control with the Reviewer
+The interactive reviewer lets you fast‑track promotions or releases instead of waiting for auto‑promotion thresholds.
+
+### Quick Views
+```bash
+# Top 20 by score (with hits/uniq/hours)
+pihole-autoblocker-review --top 20
+```
+
+### Interactive Selection
+```bash
+# Built-in prompt (works everywhere)
+pihole-autoblocker-review --interactive
+```
+Accepted inputs:
+- **Indexes**: `0 2 5`  
+- **Ranges**: `5-12`  
+- **Regex**: `/telemetry|analytics/`
+
+### Fuzzy Multi‑Select (optional)
+```bash
+# Requires fzf (installer can add it)
+pihole-autoblocker-review --fzf
+```
+
+### Threshold Promote
+```bash
+# Promote everything with score ≥ 0.95
+pihole-autoblocker-review --promote-score 0.95
+```
+
+### Release / Whitelist
+```bash
+# Release a list of domains (one per line)
+pihole-autoblocker-review --release domains.txt
+```
+
+**What happens after selection?**
+- Chosen domains are appended to **`/etc/pihole/pihole-autoblocker.manual-block.txt`** (for promotions) or **`/etc/pihole/pihole-autoblocker.allow.txt`** (for releases).
+- If `sql_promotion: true`, they’re also inserted into **Pi-hole’s** `domainlist` with comment `autoblocker`.
+- The reviewer triggers **`pihole-autoblocker.service`** to rebuild **`/etc/pihole/pihole-autoblocker.txt`**; your next `pihole -g` ingests it.
 
 ---
 
