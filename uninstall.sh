@@ -5,8 +5,8 @@ set -euo pipefail
 # Usage: sudo ./uninstall.sh
 
 if [[ $EUID -ne 0 ]]; then
-  echo "Please run as root (sudo)." >&2
-  exit 1
+	echo "Please run as root (sudo)." >&2
+	exit 1
 fi
 
 PH_ETC=/etc/pihole
@@ -29,8 +29,8 @@ rm -f $BIN/pihole-autoblocker $BIN/pihole-autoblocker-review
 # --- remove config/state (prompt first) ---
 echo "Remove config in $ETC and quarantine state in $VAR? [y/N]"
 read -r ans
-if [[ "$ans" =~ ^[Yy]$ ]]; then
-  rm -rf "$ETC" "$VAR"
+if [[ $ans =~ ^[Yy]$ ]]; then
+	rm -rf "$ETC" "$VAR"
 fi
 
 # --- remove adlist entry from Pi-hole ---
@@ -39,7 +39,7 @@ sqlite3 $PH_ETC/gravity.db "$SQL" || true
 
 # --- remove output files ---
 rm -f $PH_ETC/pihole-autoblocker.txt $PH_ETC/custom_autoblocker.txt \
-      $PH_ETC/pihole-autoblocker.manual-block.txt $PH_ETC/pihole-autoblocker.allow.txt
+	$PH_ETC/pihole-autoblocker.manual-block.txt $PH_ETC/pihole-autoblocker.allow.txt
 
 # --- rebuild gravity to purge ---
 /usr/local/bin/pihole -g || true

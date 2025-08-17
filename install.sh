@@ -9,22 +9,22 @@ set -euo pipefail
 #   - docs (optional)
 
 NO_FZF=0
-if [[ ${1:-} == "--no-fzf" ]]; then NO_FZF=1; fi
+if [[ ${1-} == "--no-fzf" ]]; then NO_FZF=1; fi
 
 # --- prereqs ---
 if [[ $EUID -ne 0 ]]; then
-  echo "Please run as root (sudo)." >&2
-  exit 1
+	echo "Please run as root (sudo)." >&2
+	exit 1
 fi
 
 command -v pihole >/dev/null || {
-  echo "Pi-hole not found. Install Pi-hole first." >&2
-  exit 1
+	echo "Pi-hole not found. Install Pi-hole first." >&2
+	exit 1
 }
 
 apt-get update
 DEBS=(python3 python3-yaml sqlite3 jq)
-(( NO_FZF == 1 )) || DEBS+=(fzf)
+((NO_FZF == 1)) || DEBS+=(fzf)
 apt-get install -y "${DEBS[@]}"
 
 # --- paths ---
@@ -48,7 +48,7 @@ install -m 0755 ./pihole-autoblocker-review.py "$BIN/pihole-autoblocker-review"
 # --- default config (create if absent) ---
 CFG=$ETC/config.yml
 if [[ ! -f $CFG ]]; then
-  cat > "$CFG" <<YAML
+	cat >"$CFG" <<YAML
 # Pi-hole Autoblocker config
 lookback_hours: 24
 min_hits: 10
@@ -101,7 +101,7 @@ YAML
 fi
 
 # --- systemd unit + timer ---
-cat > /etc/systemd/system/pihole-autoblocker.service <<'UNIT'
+cat >/etc/systemd/system/pihole-autoblocker.service <<'UNIT'
 [Unit]
 Description=Pi-hole Autoblocker - generate dynamic blocklist
 After=network-online.target
@@ -121,7 +121,7 @@ IOSchedulingPriority=7
 WantedBy=multi-user.target
 UNIT
 
-cat > /etc/systemd/system/pihole-autoblocker.timer <<'TIMER'
+cat >/etc/systemd/system/pihole-autoblocker.timer <<'TIMER'
 [Unit]
 Description=Run Pi-hole Autoblocker periodically
 
